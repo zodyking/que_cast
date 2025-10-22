@@ -16,7 +16,7 @@ class _BaseButton(ButtonEntity):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, data) -> None:
         self._hass = hass
         self._entry = entry
-               self._queue = data["queue"]
+        self._queue = data["queue"]     # ← fixed indent
         self._base_name = data["name"]
         self._device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
