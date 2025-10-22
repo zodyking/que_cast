@@ -1,12 +1,11 @@
 {
   "domain": "tts_proxy",
   "name": "TTS Proxy (Queued, Ducking, Multi-room)",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "config_flow": true,
   "documentation": "https://github.com/your-user/tts_proxy",
   "issue_tracker": "https://github.com/your-user/tts_proxy/issues",
   "requirements": [],
   "codeowners": ["@your-user"],
-  "iot_class": "local_push",
-  "loggers": ["custom_components.tts_proxy"]
+  "iot_class": "local_push"
 }
