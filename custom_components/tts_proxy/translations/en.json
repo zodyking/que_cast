@@ -1,0 +1,22 @@
+{
+  "title": "TTS Proxy",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Create a TTS Proxy",
+        "description": "Queue TTS, duck other players, and apply day/night volumes."
+      }
+    },
+    "error": {
+      "invalid_default_options_json": "Default options must be valid JSON."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TTS Proxy Options",
+        "description": "Adjust volumes, ducking, pre-roll, and detection."
+      }
+    }
+  }
+}

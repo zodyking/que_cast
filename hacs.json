@@ -1,0 +1,7 @@
+{
+  "name": "TTS Proxy",
+  "filename": "custom_components/tts_proxy/manifest.json",
+  "render_readme": true,
+  "country": "ALL",
+  "homeassistant": "2024.8.0"
+}
