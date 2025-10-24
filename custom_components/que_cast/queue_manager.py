@@ -43,7 +43,7 @@ class QueCastQueueManager:
         self._ducking_enabled = config.get("ducking_enabled", True)
         self._detection_mode = config.get("detection_mode", "timer")
         
-        self._queue: list[QueCastQueueItem] = []  # Explicitly initialize as instance variable
+        self._queue: list[QueCastQueueItem] = []
         self._current_item: Optional[QueCastQueueItem] = None
         self._is_playing = False
         self._task: Optional[asyncio.Task] = None
@@ -78,7 +78,6 @@ class QueCastQueueManager:
                 self._current_item = None
                 await self._stop_current()
             
-            # Insert by priority (higher priority first)
             inserted = False
             for i, existing in enumerate(self._queue):
                 if -priority > -existing.priority:
