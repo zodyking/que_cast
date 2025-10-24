@@ -2,6 +2,10 @@
 
 [![HACS](https://img.shields.io/badge/HACS-Custom%20integration-blue.svg)](https://custom-components.hacs.xyz/)
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/zodyking/que_cast/refs/heads/main/images/banner.png" alt="Que Cast Banner">
+</p>
+
 Que Cast enhances Home Assistant with advanced TTS proxying and media queuing. Features include priority queuing, volume ducking, quiet hours, and multi-room support.
 
 ## Key Features
