@@ -1,5 +1,4 @@
 """Queue manager for Que Cast."""
-
 from __future__ import annotations
 
 import asyncio
@@ -10,8 +9,6 @@ from typing import Optional
 
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
-
-from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -88,20 +85,20 @@ class QueCastQueueManager:
         pre_roll: Optional[int] = None,
     ) -> None:
         item = QueCastQueueItem(
-            message,
-            language,
-            options,
-            priority,
-            volume,
-            pre_roll or self._pre_roll_ms,
-            interrupt,
+            message=message,
+            language=language,
+            options=options,
+            priority=priority,
+            volume=volume,
+            pre_roll=(pre_roll if pre_roll is not None else self._pre_roll_ms),
+            interrupt=interrupt,
         )
         async with self._lock:
             if interrupt and self._current_item:
                 self._current_item = None
                 await self._stop_current()
 
-            # priority: higher number first
+            # priority queue: higher number first
             inserted = False
             for i, existing in enumerate(self._queue):
                 if item.priority > existing.priority:
@@ -159,7 +156,7 @@ class QueCastQueueManager:
         self._is_playing = True
         volume = self._get_current_volume(self._current_item.volume)
 
-        # duck others and set volume first
+        # Set volume and duck others
         if self._ducking_enabled:
             await self._duck_other_players(volume)
         await self._hass.services.async_call(
@@ -173,7 +170,7 @@ class QueCastQueueManager:
         await asyncio.sleep(self._pre_roll_ms / 1000.0)
 
         try:
-            # parse engine "tts.speak" → domain="tts", service="speak"
+            # Parse engine "tts.speak" -> domain="tts", service="speak"
             engine = self._tts_engine
             if "." in engine:
                 domain, service = engine.split(".", 1)
@@ -192,26 +189,22 @@ class QueCastQueueManager:
             except json.JSONDecodeError:
                 pass
 
-            # 'tts.speak' uses media_player_entity_id; legacy TTS services use entity_id
+            # 'tts.speak' uses 'media_player_entity_id'; legacy TTS uses 'entity_id'
             key = "media_player_entity_id" if service == "speak" else "entity_id"
             service_data[key] = self._media_player
 
             await self._hass.services.async_call(domain, service, service_data, blocking=True)
         except Exception as e:  # noqa: BLE001
             _LOGGER.exception("TTS error: %s", e)
-        finally:
-            # mark as playing; completion detection will move on
-            ...
 
     async def _is_current_done(self) -> bool:
         if self._detection_mode == "state":
             state = self._hass.states.get(self._media_player)
             return bool(state and state.state in {"idle", "off", "paused"})
-        # crude timer fallback
-        duration = 5.0
+        # timer fallback (simple)
         if self._current_item and self._current_item.timestamp:
             elapsed = (dt_util.utcnow() - self._current_item.timestamp).total_seconds()
-            return elapsed > duration
+            return elapsed > 5.0
         return False
 
     async def _finish_current(self) -> None:
@@ -223,7 +216,9 @@ class QueCastQueueManager:
 
     async def _stop_current(self) -> None:
         await self._hass.services.async_call(
-            "media_player", "media_stop", {"entity_id": self._media_player}, blocking=True
+            "media_player", "media_stop",
+            {"entity_id": self._media_player},
+            blocking=True,
         )
         if self._ducking_enabled:
             await self._restore_volumes()
@@ -231,8 +226,7 @@ class QueCastQueueManager:
 
     async def _play_pre_roll(self) -> None:
         await self._hass.services.async_call(
-            "media_player",
-            "play_media",
+            "media_player", "play_media",
             {
                 "entity_id": self._media_player,
                 "media_content_id": self._pre_roll_sound,
@@ -245,15 +239,28 @@ class QueCastQueueManager:
         if override is not None:
             return override
         now = dt_util.now().time()
-        return self._night_volume if self._is_quiet_time(now) else self._day_volume
-
-    def _is_quiet_time(self, now_time: time) -> bool:
         if self._quiet_start < self._quiet_end:
-            return self._quiet_start <= now_time <= self._quiet_end
-        return now_time >= self._quiet_start or now_time <= self._quiet_end
+            quiet = self._quiet_start <= now <= self._quiet_end
+        else:
+            quiet = now >= self._quiet_start or now <= self._quiet_end
+        return self._night_volume if quiet else self._day_volume
 
     async def _duck_other_players(self, tts_volume: float) -> None:
         self._original_volumes.clear()
         for entity in self._hass.states.async_all("media_player"):
             if entity.entity_id != self._media_player and entity.state == "playing":
-                vol = float(e
+                volume_level = float(entity.attributes.get("volume_level", 0.5))
+                self._original_volumes[entity.entity_id] = volume_level
+                ducked = max(0.1, volume_level * 0.3)
+                await self._hass.services.async_call(
+                    "media_player", "volume_set",
+                    {"entity_id": entity.entity_id, "volume_level": ducked}
+                )
+
+    async def _restore_volumes(self) -> None:
+        for entity_id, volume_level in self._original_volumes.items():
+            await self._hass.services.async_call(
+                "media_player", "volume_set",
+                {"entity_id": entity_id, "volume_level": volume_level}
+            )
+        self._original_volumes.clear()
