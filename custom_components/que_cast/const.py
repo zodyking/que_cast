@@ -1,4 +1,5 @@
 """Constants for Que Cast."""
+
 DOMAIN = "que_cast"
 
 CONF_NAME = "name"
