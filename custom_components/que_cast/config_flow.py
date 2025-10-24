@@ -9,7 +9,7 @@ from .const import DOMAIN
 DATA_SCHEMA = vol.Schema({
     vol.Required("name"): str,
     vol.Required("media_player"): selector.EntitySelector(
-        selector=selector.EntitySelectorConfig(domain=["media_player"])
+        selector.EntitySelectorConfig(domain=["media_player"])
     ),
     vol.Optional("tts_engine", default="tts.speak"): vol.In([
         "tts.speak", "tts.google_translate_say", "tts.cloud_say", "tts.polly_say"
