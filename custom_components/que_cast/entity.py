@@ -57,7 +57,7 @@ class QueCastClearQueueButton(ButtonEntity):
     
     async def async_press(self) -> None:
         queue_manager = self._hass.data[DOMAIN][self._instance_id]["queue_manager"]
-        queue_manager.clear_queue()
+        await queue_manager.clear_queue()
 
 class QueCastSkipCurrentButton(ButtonEntity):
     _attr_icon = "mdi:skip-forward"
