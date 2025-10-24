@@ -7,11 +7,12 @@ from typing import Optional
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 from .const import DOMAIN
+
 _LOGGER = logging.getLogger(__name__)
 
 class QueCastQueueItem:
-    def __init__(self, message: str, language: str = "", options: str = "{}", 
-                 priority: int = 0, volume: Optional[float] = None, 
+    def __init__(self, message: str, language: str = "", options: str = "{}",
+                 priority: int = 0, volume: Optional[float] = None,
                  pre_roll: Optional[int] = None, interrupt: bool = False):
         self.message = message
         self.language = language or None
@@ -50,10 +51,12 @@ class QueCastQueueManager:
         self._lock = asyncio.Lock()
     
     async def async_start(self) -> None:
+        """Start the queue manager."""
         if self._task is None or self._task.done():
             self._task = asyncio.create_task(self._queue_worker())
     
     async def async_stop(self) -> None:
+        """Stop the queue manager."""
         if self._task and not self._task.done():
             self._task.cancel()
             try:
@@ -64,6 +67,7 @@ class QueCastQueueManager:
     async def enqueue_speak(self, message: str, language: str = "", options: str = "{}",
                            interrupt: bool = False, priority: int = 0,
                            volume: Optional[float] = None, pre_roll: Optional[int] = None) -> None:
+        """Enqueue a speak request."""
         item = QueCastQueueItem(
             message, language, options, priority, volume,
             pre_roll or self._pre_roll_ms, interrupt
@@ -86,11 +90,13 @@ class QueCastQueueManager:
         
         await self.async_start()
     
-    def clear_queue(self) -> None:
+    async def clear_queue(self) -> None:
+        """Clear the queue."""
         async with self._lock:
             self.queue.clear()
     
     async def skip_current(self) -> None:
+        """Skip current item."""
         async with self._lock:
             if self._current_item:
                 self._current_item = None
@@ -98,9 +104,10 @@ class QueCastQueueManager:
     
     @property
     def queue(self) -> list:
-        return self.queue
+        return self._queue  # Fixed to use instance variable
     
     async def _queue_worker(self) -> None:
+        """Main queue worker."""
         while True:
             try:
                 await self._process_next_item()
@@ -112,6 +119,7 @@ class QueCastQueueManager:
                 await asyncio.sleep(5)
     
     async def _process_next_item(self) -> None:
+        """Process next queue item."""
         async with self._lock:
             if not self.queue and not self._current_item:
                 self._is_playing = False
@@ -130,6 +138,7 @@ class QueCastQueueManager:
             await self._play_current_item()
     
     async def _play_current_item(self) -> None:
+        """Play current item."""
         self._is_playing = True
         
         volume = self._get_current_volume(self._current_item.volume)
@@ -169,6 +178,7 @@ class QueCastQueueManager:
             self._current_item = None
     
     async def _is_current_done(self) -> bool:
+        """Check if current item is done."""
         if self._detection_mode == "state":
             state = self._hass.states.get(self._media_player)
             return state and state.state in ["idle", "off", "paused"]
@@ -180,6 +190,7 @@ class QueCastQueueManager:
         return False
     
     async def _finish_current(self) -> None:
+        """Finish current item."""
         if self._ducking_enabled:
             await self._restore_volumes()
         
@@ -188,6 +199,7 @@ class QueCastQueueManager:
         self._is_playing = False
     
     async def _stop_current(self) -> None:
+        """Stop current playback."""
         await self._hass.services.async_call(
             "media_player", "media_stop",
             {"entity_id": self._media_player},
@@ -198,6 +210,7 @@ class QueCastQueueManager:
         self._is_playing = False
     
     async def _play_pre_roll(self) -> None:
+        """Play pre-roll sound."""
         if self._pre_roll_sound:
             await self._hass.services.async_call(
                 "media_player", "play_media",
@@ -210,6 +223,7 @@ class QueCastQueueManager:
             )
     
     def _get_current_volume(self, override: Optional[float]) -> float:
+        """Get appropriate volume based on time."""
         if override is not None:
             return override
         
@@ -219,11 +233,13 @@ class QueCastQueueManager:
         return self._day_volume
     
     def _is_quiet_time(self, now_time: time) -> bool:
+        """Check if current time is quiet hours."""
         if self._quiet_start < self._quiet_end:
             return self._quiet_start <= now_time <= self._quiet_end
         return now_time >= self._quiet_start or now_time <= self._quiet_end
     
     async def _duck_other_players(self, tts_volume: float) -> None:
+        """Duck other media players."""
         self._original_volumes.clear()
         for entity in self._hass.states.async_all("media_player"):
             if entity.entity_id != self._media_player and entity.state == "playing":
@@ -236,6 +252,7 @@ class QueCastQueueManager:
                 )
     
     async def _restore_volumes(self) -> None:
+        """Restore original volumes."""
         for entity_id, vol in self._original_volumes.items():
             await self._hass.services.async_call(
                 "media_player", "volume_set",
