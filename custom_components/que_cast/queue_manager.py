@@ -43,7 +43,7 @@ class QueCastQueueManager:
         self._ducking_enabled = config.get("ducking_enabled", True)
         self._detection_mode = config.get("detection_mode", "timer")
         
-        self.queue: list[QueCastQueueItem] = []
+        self._queue: list[QueCastQueueItem] = []  # Explicitly initialize as instance variable
         self._current_item: Optional[QueCastQueueItem] = None
         self._is_playing = False
         self._task: Optional[asyncio.Task] = None
@@ -80,20 +80,20 @@ class QueCastQueueManager:
             
             # Insert by priority (higher priority first)
             inserted = False
-            for i, existing in enumerate(self.queue):
+            for i, existing in enumerate(self._queue):
                 if -priority > -existing.priority:
-                    self.queue.insert(i, item)
+                    self._queue.insert(i, item)
                     inserted = True
                     break
             if not inserted:
-                self.queue.append(item)
+                self._queue.append(item)
         
         await self.async_start()
     
     async def clear_queue(self) -> None:
         """Clear the queue."""
         async with self._lock:
-            self.queue.clear()
+            self._queue.clear()
     
     async def skip_current(self) -> None:
         """Skip current item."""
@@ -104,7 +104,8 @@ class QueCastQueueManager:
     
     @property
     def queue(self) -> list:
-        return self._queue  # Fixed to use instance variable
+        """Return the current queue."""
+        return self._queue
     
     async def _queue_worker(self) -> None:
         """Main queue worker."""
@@ -121,7 +122,7 @@ class QueCastQueueManager:
     async def _process_next_item(self) -> None:
         """Process next queue item."""
         async with self._lock:
-            if not self.queue and not self._current_item:
+            if not self._queue and not self._current_item:
                 self._is_playing = False
                 return
         
@@ -131,8 +132,8 @@ class QueCastQueueManager:
             return
         
         async with self._lock:
-            if self.queue:
-                self._current_item = self.queue.pop(0)
+            if self._queue:
+                self._current_item = self._queue.pop(0)
         
         if self._current_item:
             await self._play_current_item()
