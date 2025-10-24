@@ -1,15 +1,15 @@
 {
-  "name": "Que Cast",
-  "content_in_root": false,
-  "domain": "que_cast",
-  "documentation": "https://github.com/zodyking/que_cast#readme",
-  "homeassistant": "2023.12.0",
-  "issue_tracker": "https://github.com/zodyking/que_cast/issues",
-  "zip_release": true,
-  "categories": ["media"],
-  "after_dependencies": [],
-  "codeowners": ["@zodyking"],
-  "config_flow": true,
-  "iot_class": "local_polling",
-  "requirements": []
+    "name": "Que Cast",
+    "content_in_root": false,
+    "domain": "que_cast",
+    "documentation": "https://github.com/zodyking/que_cast#readme",
+    "homeassistant": "2023.12.0",
+    "issue_tracker": "https://github.com/zodyking/que_cast/issues",
+    "zip_release": true,
+    "categories": ["media"],
+    "after_dependencies": [],
+    "codeowners": ["@zodyking"],
+    "config_flow": true,
+    "iot_class": "local_polling",
+    "requirements": []
 }
