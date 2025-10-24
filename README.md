@@ -1,78 +1,68 @@
-# TTS Proxy — Home Assistant Custom Integration
+# Que Cast - Advanced TTS & Media Proxy for Home Assistant
 
-**Queued, no-clash TTS with per-room queues, day/night volumes, ducking, and a simple `tts_proxy.speak` service.**
+[![HACS](https://img.shields.io/badge/HACS-Custom%20integration-blue.svg)](https://custom-components.hacs.xyz/)
 
-![badge](https://img.shields.io/badge/HA-Custom%20Component-blue) ![badge](https://img.shields.io/github/v/release/your-user/tts_proxy)
+Que Cast is a powerful Home Assistant custom integration that provides advanced text-to-speech (TTS) proxying and media queue management. It features serialized priority queuing, volume ducking, quiet hours, and multi-room support.
 
 ## Features
-- **True serialization** — one TTS at a time per proxy (room)
-- **Multi-room** — create multiple proxy instances, each with its own queue
-- **Day/Night volumes** with quiet hours
-- **Pre-roll** to avoid first-syllable clipping
-- **Ducking** — lower other media players while TTS is speaking
-- **Buttons** — Clear Queue & Skip Current
-- **Queue size sensor**
 
-## Installation (HACS)
-1. In HACS, add this repository as a **Custom repository** (category **Integration**): `https://github.com/your-user/tts_proxy`
-2. Install **TTS Proxy**.
-3. Restart Home Assistant.
-4. Go to **Settings → Devices & Services → Add Integration → TTS Proxy**.
+- **Priority-based Queue**: FIFO with interrupt support for urgent messages
+- **Zero-clip Pre-roll**: Configurable delay to prevent audio cutoff
+- **Smart Volume Control**: Day/night volumes with quiet hours
+- **Audio Ducking**: Automatically lowers other media players during TTS
+- **Multi-engine Support**: Works with any HA TTS service (tts.speak, Piper, Polly, etc.)
+- **Multiple Instances**: Separate queues per room/zone
+- **Custom Pre-roll Sounds**: Add chimes or alerts before messages
+- **UI Configuration**: No YAML required - full config flow support
+- **Queue Management**: Clear queue, skip current, live queue size sensor
 
-## Manual install
-- Copy `custom_components/tts_proxy/` into your Home Assistant `custom_components/` directory.
-- Restart Home Assistant and add the integration from the UI.
+## Installation
 
-## Configuration (UI)
-For each room/queue:
-- **Target media player** (default speaker for the queue)
-- **TTS service** (e.g., `tts.speak`, `google_cloud_say.speak`)
-- Optional **default language** and **options JSON** for your TTS provider
-- **Quiet hours** window, **day/night** volumes, and **pre-roll (ms)**
-- **Ducking**: enable, targets (comma-separated), duck volume, restore delay
-- **Done detection**: by player **state** (default) or **timer** with a max seconds cap
+### Via HACS
 
-## Service: `tts_proxy.speak`
+1. Add this repository to HACS custom repositories
+2. Search for "Que Cast" and install
+3. Restart Home Assistant
+4. Configure via Settings > Devices & Services
+
+### Manual Installation
+
+1. Download the ZIP and extract to `custom_components/que_cast/`
+2. Restart Home Assistant
+3. Configure via Settings > Devices & Services
+
+## Configuration
+
+Add a Que Cast instance via the UI:
+
+### Basic Settings
+- **Name**: Friendly name for this instance
+- **Media Player**: Target media player entity
+- **TTS Engine**: Default TTS service (tts.speak, etc.)
+
+### Volume Settings
+- **Day Volume**: Normal daytime volume (0.0-1.0)
+- **Night Volume**: Quiet time volume (0.0-1.0)
+- **Quiet Hours**: Time window for night volume (e.g., 22:00-07:00)
+
+### Advanced Settings
+- **Pre-roll Sound**: URL to custom sound file
+- **Pre-roll Delay**: Milliseconds before TTS starts
+- **Post-grace Delay**: Delay before restoring volumes
+- **Ducking**: Lower other media players during TTS
+- **Detection Mode**: State polling or timer-based completion
+
+## Usage
+
+### Service Calls
+
+**Queue TTS Message:**
 ```yaml
-service: tts_proxy.speak
+service: que_cast.speak
 data:
-  message: "Front door opened."
-  media_player_entity_id: media_player.living_room
-  # Optional:
-  # proxy_id: "Living Room Proxy"    # (entry title or entry_id)
-  # interrupt: true                  # stop current audio & clear queue
-  # priority: 5                      # higher runs sooner (FIFO among equals)
-  # volume_override: 0.55            # bypass day/night
-  # pre_roll_ms: 200                 # override proxy default
-  # language: en-US
-  # options: { voice: "studio" }
-```
-
-### Example automations
-```yaml
-- alias: Door announce
-  trigger:
-    - platform: state
-      entity_id: binary_sensor.front_door
-      to: "on"
-  action:
-    - service: tts_proxy.speak
-      data:
-        message: "Front door opened."
-        media_player_entity_id: media_player.hallway_display
-```
-
-## Entities
-- `sensor.<proxy_name>_queue` — queue size
-- `button.<proxy_name>_clear_queue`
-- `button.<proxy_name>_skip_current`
-
-## Troubleshooting
-- **No speech?** Ensure your TTS service path is correct (e.g., `tts.speak`) and your target media player is online.
-- **Overlapping audio?** Use `interrupt: true` for urgent announcements; otherwise FIFO prevents clashes.
-- **Clipped openings?** Increase **pre_roll_ms** to 200–300ms.
-- **Provider doesn't toggle to `playing`?** In Options, set **Detection** to **timer** and pick a cap near your average clip length.
-
----
-
-MIT © You
+  instance_id: "living_room"
+  message: "Dinner is ready!"
+  language: "en-US"
+  priority: 5
+  interrupt: true
+  volume_override: 0.7
