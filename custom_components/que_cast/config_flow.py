@@ -35,10 +35,12 @@ class QueCastConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
         return QueCastOptionsFlowHandler(config_entry)
 
-    async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
+    async def async_step_user(self, user_input=None):
+        """Handle a flow initialized by the user."""
         if self._async_current_entries():
             return self.async_abort(reason="single_instance_only")
 
@@ -50,15 +52,21 @@ class QueCastConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=DATA_SCHEMA)
 
 class QueCastOptionsFlowHandler(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    """Handle Que Cast options."""
+
+    def __init__(self, config_entry):
+        """Initialize options flow."""
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
+    async def async_step_init(self, user_input=None):
+        """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        schema = vol.Schema({
-            vol.Optional(k, default=self.config_entry.options.get(k, v.default)): v
-            for k, v in DATA_SCHEMA.schema.items()
-        })
-        return self.async_show_form(step_id="init", data_schema=schema)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema({
+                vol.Optional(k, default=self.config_entry.options.get(k, v.default)): v
+                for k, v in DATA_SCHEMA.schema.items()
+            })
+        )
